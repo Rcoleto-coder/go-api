@@ -9,6 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+var DB *mongo.Database
 var Client *mongo.Client
 
 func Connect(uri string) {
@@ -16,10 +17,19 @@ func Connect(uri string) {
 	defer cancel()
 
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
-	if err != nil {
-		log.Fatal(err)
-	}
 
+	// Check for connection error
+	if err != nil {
+		log.Fatal("Mongo connect error: ", err)
+	}
+	// Ping the database to verify connection
+	if err := client.Ping(ctx, nil); err != nil {
+		log.Fatal("Mongo ping failed: ", err)
+	}
+	// Use the database name "go-api"
+	DB = client.Database("go-api")
+
+	// Set the global client variable
 	Client = client
 	log.Println("MongoDB connected")
 }

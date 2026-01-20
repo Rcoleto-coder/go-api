@@ -13,22 +13,29 @@ import (
 
 func main() {
 	godotenv.Load()
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
 
 	database.Connect(os.Getenv("MONGO_URI"))
 
 	mux := http.NewServeMux()
+
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		log.Fatal("JWT_SECRET is not set")
+	}
+
 	mux.HandleFunc("/register", handlers.Register)
 	mux.HandleFunc("/login", handlers.Login)
 
-	protected := middleware.AuthMiddleware(os.Getenv("JWT_SECRET"))
-	mux.Handle("/home", protected(http.HandlerFunc(handlers.Home)))
+	protected := middleware.AuthMiddleware(jwtSecret)
+	mux.Handle("/", protected(http.HandlerFunc(handlers.Home)))
 
-	log.Println("HTTPS API running on https://localhost:8000")
+	handler := middleware.CORS(mux)
 
-	http.ListenAndServeTLS(
-		":8000",
-		os.Getenv("TLS_CERT"),
-		os.Getenv("TLS_KEY"),
-		mux,
-	)
+	log.Println("HTTP API running on http://localhost:" + port)
+	http.ListenAndServe(":"+port, handler)
+
 }
