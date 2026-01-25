@@ -7,13 +7,13 @@ import (
 	"net/http"
 	"os"
 	"time"
-	
+
 	"io"
 	"strings"
 
 	"github.com/Rcoleto-coder/go-api/internal/database"
-    "github.com/Rcoleto-coder/go-api/pkg/auth"
-    "github.com/Rcoleto-coder/go-api/pkg/models"
+	"github.com/Rcoleto-coder/go-api/pkg/auth"
+	"github.com/Rcoleto-coder/go-api/pkg/models"
 	"github.com/Rcoleto-coder/go-api/pkg/utils"
 )
 
@@ -31,10 +31,9 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	var req RegisterRequest
 
 	// Debug: log raw body
-    rawBody, _ := io.ReadAll(r.Body)
-    log.Println("Raw request body:", string(rawBody))
-    r.Body = io.NopCloser(strings.NewReader(string(rawBody))) // Reset body for decoder
-
+	rawBody, _ := io.ReadAll(r.Body)
+	log.Println("Raw request body:", string(rawBody))
+	r.Body = io.NopCloser(strings.NewReader(string(rawBody))) // Reset body for decoder
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid JSON", http.StatusBadRequest)
@@ -45,7 +44,6 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	// Normalize
 	req.Email = utils.NormalizeEmail(req.Email)
 	req.Password = utils.NormalizePassword(req.Password)
-
 
 	// Validate
 	if req.Email == "" || req.Password == "" {
@@ -68,7 +66,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 
 	user := models.User{
 		Email:     req.Email,
-		Password: hash,
+		Password:  hash,
 		CreatedAt: time.Now(),
 		Role:      "user",
 	}
@@ -85,7 +83,6 @@ func Register(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusCreated)
 }
-
 
 func Login(w http.ResponseWriter, r *http.Request) {
 	var req LoginRequest
@@ -129,7 +126,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	refreshToken, err := auth.GenerateRefreshToken(os.Getenv("JWT_SECRET"))
+	refreshToken, err := auth.GenerateRefreshToken(user.ID.Hex(), os.Getenv("JWT_SECRET"))
 	if err != nil {
 		http.Error(w, "token generation failed", http.StatusInternalServerError)
 		return
@@ -143,6 +140,30 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		SameSite: http.SameSiteStrictMode,
 		Path:     "/refresh",
 	})
+
+	json.NewEncoder(w).Encode(map[string]string{
+		"accessToken": accessToken,
+	})
+}
+
+func Refresh(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("refreshToken")
+	if err != nil {
+		http.Error(w, "refresh token missing", http.StatusUnauthorized)
+		return
+	}
+
+	userID, err := auth.ValidateRefreshToken(cookie.Value, os.Getenv("JWT_SECRET"))
+	if err != nil {
+		http.Error(w, "invalid refresh token", http.StatusUnauthorized)
+		return
+	}
+
+	accessToken, err := auth.GenerateAccessToken(userID, os.Getenv("JWT_SECRET"))
+	if err != nil {
+		http.Error(w, "token generation failed", http.StatusInternalServerError)
+		return
+	}
 
 	json.NewEncoder(w).Encode(map[string]string{
 		"accessToken": accessToken,

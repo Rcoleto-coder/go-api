@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/joho/godotenv"
 	"github.com/Rcoleto-coder/go-api/internal/database"
 	"github.com/Rcoleto-coder/go-api/internal/handlers"
 	"github.com/Rcoleto-coder/go-api/internal/middleware"
+	"github.com/joho/godotenv"
 )
 
 func main() {
@@ -29,6 +29,7 @@ func main() {
 
 	mux.HandleFunc("/register", handlers.Register)
 	mux.HandleFunc("/login", handlers.Login)
+	mux.HandleFunc("/refresh", handlers.Refresh)
 
 	protected := middleware.AuthMiddleware(jwtSecret)
 	mux.Handle("/", protected(http.HandlerFunc(handlers.Home)))
