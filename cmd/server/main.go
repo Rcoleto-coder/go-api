@@ -31,9 +31,6 @@ func main() {
 	mux.HandleFunc("/login", handlers.Login)
 	mux.HandleFunc("/refresh", handlers.Refresh)
 
-	protected := middleware.AuthMiddleware(jwtSecret)
-	mux.Handle("/", protected(http.HandlerFunc(handlers.Home)))
-
 	handler := middleware.CORS(mux)
 
 	log.Println("HTTP API running on http://localhost:" + port)

@@ -8,9 +8,6 @@ import (
 	"os"
 	"time"
 
-	"io"
-	"strings"
-
 	"github.com/Rcoleto-coder/go-api/internal/database"
 	"github.com/Rcoleto-coder/go-api/pkg/auth"
 	"github.com/Rcoleto-coder/go-api/pkg/models"
@@ -27,14 +24,11 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
+// User sign up
 func Register(w http.ResponseWriter, r *http.Request) {
 	var req RegisterRequest
 
-	// Debug: log raw body
-	rawBody, _ := io.ReadAll(r.Body)
-	log.Println("Raw request body:", string(rawBody))
-	r.Body = io.NopCloser(strings.NewReader(string(rawBody))) // Reset body for decoder
-
+	// Decode the request body into the RegisterRequest struct
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid JSON", http.StatusBadRequest)
 		log.Println("Invalid JSON in Register request", err)
@@ -83,7 +77,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusCreated)
 }
-
+// User login
 func Login(w http.ResponseWriter, r *http.Request) {
 	var req LoginRequest
 
@@ -146,6 +140,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// Refresh access token
 func Refresh(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("refreshToken")
 	if err != nil {
