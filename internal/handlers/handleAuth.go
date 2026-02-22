@@ -46,9 +46,17 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(req.Password) < 6 {
+	// Validate email format
+	if !utils.IsValidEmail(req.Email) {
+		http.Error(w, "invalid email address", http.StatusBadRequest)
+		log.Println("Invalid email address")
+		return
+	}
+
+	// Validate password length
+	if !utils.IsValidPassword(req.Password) {
 		http.Error(w, "password must be at least 6 characters", http.StatusBadRequest)
-		log.Println("password must be at least 6 characters")
+		log.Println("Invalid password")
 		return
 	}
 
