@@ -30,6 +30,7 @@ func main() {
 	mux.HandleFunc("/register", handlers.Register)
 	mux.HandleFunc("/login", handlers.Login)
 	mux.HandleFunc("/refresh", handlers.Refresh)
+	mux.Handle("/users/", middleware.AuthMiddleware(jwtSecret)(http.HandlerFunc(handlers.GetUser)))
 
 	handler := middleware.CORS(mux)
 
